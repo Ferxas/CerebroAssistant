@@ -1,0 +1,7 @@
+openai-whisper
+sounddevice
+numpy
+pyttsx3
+ultralytics
+opencv-python
+requests
