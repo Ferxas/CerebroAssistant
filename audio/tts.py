@@ -7,18 +7,21 @@ class TextToSpeech:
         self.engine.setProperty('rate', 160)
 
     def set_spanish_voice(self):
-        for voice in self.engine.getProperty('voices'):
-            lang_info = ""
-            if hasattr(voice, "languages") and voice.languages:
-                try:
-                    lang_info = voice.languages[0].decode().lower()
-                except:
-                    pass
-            if "spanish" in voice.name.lower() or "es" in lang_info or "es" in voice.id.lower():
-                self.engine.setProperty('voice', voice.id)
-                print(f"✅ Voz española seleccionada: {voice.name}")
-                return
-        print("❌ No se encontró una voz en español. Revisa la configuración de voces del sistema.")
+        voices = self.engine.getProperty('voices')
+        selected = None
+
+        for voice in voices:
+            name = voice.name.lower()
+            langs = [l.decode().lower() if isinstance(l, bytes) else l.lower() for l in getattr(voice, "languages", [])]
+            if "spanish" in name or any("es" in lang for lang in langs) or "spanish" in voice.id.lower():
+                selected = voice
+                break
+
+        if selected:
+            self.engine.setProperty('voice', selected.id)
+            print(f"✅ Voz en español seleccionada: {selected.name}")
+        else:
+            print("❌ No se encontró una voz en español. Revisa la configuración de voces en tu sistema.")
 
     def speak(self, text):
         print("🔈 Hablando...")

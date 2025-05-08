@@ -1,7 +1,5 @@
-# llm/ollama_client.py
-
 import requests
-
+import re
 
 class OllamaClient:
     def __init__(self, model="deepseek-r1:7b"):
@@ -18,6 +16,9 @@ class OllamaClient:
         }
         self.history = [self.system_prompt]
 
+    def clean_response(self, raw_text):
+        return re.sub(r"<think>.*?</think>", "", raw_text, flags=re.DOTALL).strip()
+
     def send_message(self, user_message):
         self.history.append({"role": "user", "content": user_message})
         payload = {
@@ -30,10 +31,13 @@ class OllamaClient:
             response = requests.post(self.api_url, json=payload)
             response.raise_for_status()
             data = response.json()
+
             assistant_message = data["message"]["content"]
-            self.history.append(
-                {"role": "assistant", "content": assistant_message})
-            return assistant_message
+            cleaned_message = self.clean_response(assistant_message)
+
+            self.history.append({"role": "assistant", "content": cleaned_message})
+            return cleaned_message
+
         except Exception as e:
-            print("Error al contactar con Ollama:", e)
+            print("❌ Error al contactar con Ollama:", e)
             return "Lo siento, hubo un error al intentar pensar."

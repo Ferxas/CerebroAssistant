@@ -5,6 +5,7 @@ import sounddevice as sd
 import numpy as np
 import whisper
 import threading
+import time
 
 class WhisperListener:
     def __init__(self, model_size="base", trigger_word="cerebro"):
@@ -48,3 +49,24 @@ class WhisperListener:
         t = threading.Thread(target=self._listen_audio)
         t.start()
         t.join()
+
+    def listen_with_timeout(self, timeout=10):
+        print(f"🎤 Tienes {timeout} segundos para hablar...")
+        self.running = True
+        audio_data = np.empty((0, 1), dtype=np.float32)
+        start_time = time.time()
+
+        with sd.InputStream(samplerate=16000, channels=1, callback=self._callback):
+            while time.time() - start_time < timeout:
+                try:
+                    data = self.q.get(timeout=1)
+                    audio_data = np.concatenate((audio_data, data))
+                except queue.Empty:
+                    continue
+
+        if len(audio_data) < 16000:  # silencio o casi nada
+            return None
+
+        audio_segment = np.squeeze(audio_data)
+        result = self.model.transcribe(audio_segment, fp16=False, language='es')
+        return result["text"].strip()
